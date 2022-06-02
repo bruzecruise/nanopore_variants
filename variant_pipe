@@ -1,6 +1,27 @@
 #!/bin/bash
 
-############### pipeline to get variants ###############
+########################## *************** change these variable for each run **************** #########################
+# below are an example of variables. absolute paths are reccommended. not relative
+# threads called for run
+THREAD="12"
+
+# model for guppy super found in clair3 install file
+MODEL="/afs/crc.nd.edu/user/d/dbruzzes/.conda/envs/mamba/envs/clair3/bin/models/r941_prom_sup_g5014/"
+
+# ref genome (can use whole gneome or just regions of interest)
+REF_GENOME="/afs/crc.nd.edu/user/d/dbruzzes/malaria/5.26.22/cat_microhaps.fasta"
+
+# nanopore guppy called reads
+LONGREADS="/afs/crc.nd.edu/user/d/dbruzzes/malaria/5.26.22/barcode14/combo_barcode14.fastq"
+
+# prefix to name all output files
+NAME="MH_barcode14_CG"
+
+# directory wheee you want results to go
+DIR="/afs/crc.nd.edu/user/d/dbruzzes/malaria/5.26.22/microHap"
+
+
+########################## pipeline to get variants #############################
 # load software into a single conda / mamba envroment makes life easy 
 # mamba activte env_name
 
