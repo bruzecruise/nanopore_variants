@@ -1,0 +1,40 @@
+#!/bin/bash
+
+############### pipeline to get variants ###############
+# load software into a single conda / mamba envroment makes life easy 
+# mamba activte env_name
+
+# strigent selection of hQ reads
+echo $(cat ${LONGREADS} | wc -l)/4| bc 
+filtlong ${LONGREADS} --min_mean_q 20 --min_window_q 20 > ${NAME}.filt.LONGREADS
+echo $(cat ${NAME}.filt.LONGREADS | wc -l)/4 | bc 
+
+# map reads to reference
+minimap2 -t $THREAD -a -x map-ont $REF_GENOME ${NAME}.filt.LONGREADS -o tmp.sam
+samtools view -q 30 -Sbh -F 0x4 tmp.sam --threads ${THREAD}| samtools sort --threads ${THREAD} -o ${NAME}_sorted_mapped.bam
+rm tmp.sam
+
+# assign readgrp info to generated bam files
+RG="@RG\tID:${NAME}\tSM:${NAME}\tPL:ONT9.41"; 
+samtools addreplacerg ${NAME}_sorted_mapped.bam -r ${RG} --threads ${THREAD} -o ${NAME}_rg.sort.mapped.bam; #works
+samtools view -H ${NAME}_rg.sort.mapped.bam | grep "@RG"
+
+# index ref genome and bam file
+samtools index ${NAME}_rg.sort.mapped.bam
+samtools faidx $REF_GENOME
+
+# run clair3 to call variants
+run_clair3.sh --bam_fn ${NAME}_rg.sort.mapped.bam --ref_fn ${REF_GENOME} -t ${THREAD} --platform 'ont' -m ${MODEL} -o clair3_${NAME} --include_all_ctgs --no_phasing_for_fa --haploid_precise --min_coverage=25 --min_mq=60
+
+# filter var at qual > 15 # this is a stringent filtering. Can modify this
+vcftools --gzvcf merge_output.vcf.gz --minQ 15 --recode --recode-INFO-all --out filt.vcf
+
+# make a bed file from variants 
+convert2bed --input=vcf < filt.vcf.recode.vcf > test.bed
+
+
+########## to dos
+# need to automate identifying number of strains in a pool. 
+# need to figure out how to phase reads to sort reads into bins for each strain. 
+# Then assemble the fragments to generate consensus sequences for each strain
+# can also automate checking for drug resistance SNPs
